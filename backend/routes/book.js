@@ -7,12 +7,13 @@ const router = express.Router();
 const bookCtrl = require ('../controllers/book');
 
 
-router.get('/',  bookCtrl.getAllStuff);
+router.get('/',  bookCtrl.getAllBook);
 router.post('/', auth, multer, bookCtrl.createBook); 
 router.get('/:id',  bookCtrl.getOneBook);
 router.put('/:id', auth, multer, bookCtrl.modifyBook );
 router.delete('/:id', auth, bookCtrl.deleteBook );
-router.post('/:id/rating', bookCtrl.postRating);
+router.post('/books/:id/rating', multer, bookCtrl.postRating);
+router.get('/books/bestrating',bookCtrl.getBestRating);
 
 
 

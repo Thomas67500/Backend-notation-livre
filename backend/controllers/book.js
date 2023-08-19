@@ -74,7 +74,7 @@ exports.getOneBook = (req, res, next) => {
     });
   };
   
-  exports.getAllStuff = (req, res, next) => {
+  exports.getAllBook = (req, res, next) => {
     Book.find().then(
       (books) => {
         res.status(200).json(books);
@@ -97,7 +97,7 @@ exports.getOneBook = (req, res, next) => {
       return;
     }
     const rating = req.body.rating;
-    const userId = req.Payload.userId;
+    const userId = req.body.userId;
     try {
       const book = await Book.findById(id);
       if (book == null) {
