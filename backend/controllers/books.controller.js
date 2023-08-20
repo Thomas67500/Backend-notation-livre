@@ -4,62 +4,15 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 
 const booksRouter = express.Router();
-booksRouter.get("/bestrating", getBestRating);
+//booksRouter.get("/bestrating", getBestRating);
 booksRouter.get("/:id", getBookById);
 booksRouter.get("/", getBooks);
 booksRouter.post("/", checkToken, upload.single("image"), postBook);
 booksRouter.delete("/:id", checkToken, deleteBook);
 booksRouter.put("/:id", checkToken, upload.single("image"), putBook);
-booksRouter.post("/:id/rating", checkToken, postRating);
+//booksRouter.post("/:id/rating", checkToken, postRating);
 
-async function postRating(req, res) {
-  const id = req.params.id;
-  if (id == null || id == "undefined") {
-    res.status(400).send("Book id is missing");
-    return;
-  }
-  const rating = req.body.rating;
-  const userId = req.tokenPayload.userId;
-  try {
-    const book = await Book.findById(id);
-    if (book == null) {
-      res.status(404).send("Book not found");
-      return;
-    }
-    const ratingsInDb = book.ratings;
-    const previousRatingFromCurrentUser = ratingsInDb.find((rating) => rating.userId == userId);
-    if (previousRatingFromCurrentUser != null) {
-      res.status(400).send("You have already rated this book");
-      return;
-    }
-    const newRating = { userId, grade: rating };
-    ratingsInDb.push(newRating);
-    book.averageRating = calculateAverageRating(ratingsInDb);
-    await book.save();
-    res.send("Rating posted");
-  } catch (e) {
-    console.error(e);
-    res.status(500).send("Something went wrong:" + e.message);
-  }
-}
 
-function calculateAverageRating(ratings) {
-  const sumOfAllGrades = ratings.reduce((sum, rating) => sum + rating.grade, 0);
-  return sumOfAllGrades / ratings.length;
-}
-
-async function getBestRating(req, res) {
-  try {
-    const booksWithBestRatings = await Book.find().sort({ rating: -1 }).limit(3);
-    booksWithBestRatings.forEach((book) => {
-      book.imageUrl = getAbsoluteImagePath(book.imageUrl);
-    });
-    res.send(booksWithBestRatings);
-  } catch (e) {
-    console.error(e);
-    res.status(500).send("Something went wrong:" + e.message);
-  }
-}
 
 async function putBook(req, res) {
   const id = req.params.id;
@@ -184,3 +137,9 @@ function getAbsoluteImagePath(fileName) {
 }
 
 module.exports = { booksRouter };
+
+
+
+
+
+

@@ -90,52 +90,33 @@ exports.getOneBook = (req, res, next) => {
 
  
 
-  exports.postRating = async (req, res) => {
-    const id = req.params.id;
-    if (id == null || id == "undefined") {
-      res.status(400).send("Book id is missing");
-      return;
-    }
-    const rating = req.body.rating;
-    const userId = req.body.userId;
-    try {
-      const book = await Book.findById(id);
-      if (book == null) {
-        res.status(404).send("Book not found");
-        return;
-      }
-      const ratingsInDb = book.ratings;
-      const previousRatingFromCurrentUser = ratingsInDb.find((rating) => rating.userId == userId);
-      if (previousRatingFromCurrentUser != null) {
-        res.status(400).send("You have already rated this book");
-        return;
-      }
-      const newRating = { userId, grade: rating };
-      ratingsInDb.push(newRating);
-      book.averageRating = calculateAverageRating(ratingsInDb);
-      await book.save();
-      res.send("Rating posted");
-    } catch (e) {
-      console.error(e);
-      res.status(500).send("Something went wrong:" + e.message);
-    }
-  }
+  exports.addRating = (req, res, next) => {
+    const userId = req.auth.userId;
+    const { rating } = req.body;
+    let userRating = {
+        userId,
+        grade: rating
+    };
+    Book.findByIdAndUpdate({ _id: req.params.id }, { $push: { ratings: userRating } }, { _id: req.params.id }, { new: true })
+        .then(book => {
+            // if (!book) { return res.status(404).json({ message: 'Livre introuvable!' }); }
+            const sumRatings = book.ratings.reduce((sum, rating) => sum + rating.grade, 0);
+            book.averageRating = sumRatings / book.ratings.length;
+            //book.averageRating.toFixed(2);
+            book.save()
+                .then(() => res.status(200).json({ book }))
+                .catch((error) => { res.status(500).json({ error }) })
+        })
+        .catch((error) => { res.status(404).json({ error }) });
+};
 
-
-  function calculateAverageRating(ratings) {
-    const sumOfAllGrades = ratings.reduce((sum, rating) => sum + rating.grade, 0);
-    return sumOfAllGrades / ratings.length;
-  }
+exports.getBestRating = (req, res, next) => {
   
-  exports.getBestRating= async (req, res) => { 
-    try {
-      const booksWithBestRatings = await Book.find().sort({ rating: -1 }).limit(3);
-      booksWithBestRatings.forEach((book) => {
-        book.imageUrl = getAbsoluteImagePath(book.imageUrl);
-      });
-      res.send(booksWithBestRatings);
-    } catch (e) {
-      console.error(e);
-      res.status(500).send("Something went wrong:" + e.message);
-    }
-  }
+  Book.find()
+      .then((books) => {
+          books.sort((a, b) => b.averageRating - a.averageRating)
+          books.slice(0, 3)
+          res.status(200).json(books);
+      })
+      .catch((error) => { res.status(404).json({ error: error }); });
+};
