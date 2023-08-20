@@ -99,10 +99,10 @@ exports.getOneBook = (req, res, next) => {
     };
     Book.findByIdAndUpdate({ _id: req.params.id }, { $push: { ratings: userRating } }, { _id: req.params.id }, { new: true })
         .then(book => {
-            // if (!book) { return res.status(404).json({ message: 'Livre introuvable!' }); }
+             if (!book) { return res.status(404).json({ message: 'Livre introuvable!' }); }
             const sumRatings = book.ratings.reduce((sum, rating) => sum + rating.grade, 0);
             book.averageRating = sumRatings / book.ratings.length;
-            //book.averageRating.toFixed(2);
+            book.averageRating.toFixed(2);
             book.save()
                 .then(() => res.status(200).json({ book }))
                 .catch((error) => { res.status(500).json({ error }) })
