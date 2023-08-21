@@ -14,7 +14,7 @@ exports.createBook = (req, res, next) => {
  
    book.save()
    .then(() => { res.status(201).json({message: 'Livre enregistré !'})})
-   .catch(error => { res.status(400).json( { error })})
+   .catch(error => { res.status(404).json( { error })})
 };
 
 exports.getOneBook = (req, res, next) => {
@@ -26,7 +26,7 @@ exports.getOneBook = (req, res, next) => {
       }
     ).catch(
       (error) => {
-        res.status(404).json({
+        res.status(400).json({
           error: error
         });
       }
@@ -43,11 +43,11 @@ exports.getOneBook = (req, res, next) => {
   Book.findOne({_id: req.params.id})
       .then((book) => {
           if (book.userId != req.auth.userId) {
-              res.status(401).json({ message : 'Not authorized'});
+              res.status(403).json({ message : 'Not authorized'});
           } else {
               Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
               .then(() => res.status(200).json({message : 'Livre modifié!'}))
-              .catch(error => res.status(401).json({ error }));
+              .catch(error => res.status(403).json({ error }));
           }
       })
       .catch((error) => {
@@ -59,13 +59,13 @@ exports.getOneBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id})
     .then(book => {
         if (book.userId != req.auth.userId) {
-            res.status(401).json({message: 'Not authorized'});
+            res.status(403).json({message: 'Not authorized'});
         } else {
             const filename = book.imageUrl.split('/images/')[1];
             fs.unlink(`images/${filename}`, () => {
                 Book.deleteOne({_id: req.params.id})
                     .then(() => { res.status(200).json({message: 'Livre supprimé !'})})
-                    .catch(error => res.status(401).json({ error }));
+                    .catch(error => res.status(403).json({ error }));
             });
         }
     })
@@ -97,17 +97,17 @@ exports.getOneBook = (req, res, next) => {
         userId,
         grade: rating
     };
-    Book.findByIdAndUpdate({ _id: req.params.id }, { $push: { ratings: userRating } }, { _id: req.params.id }, { new: true })
+    Book.findByIdAndUpdate({ _id: req.params.id }, { $push: { ratings: userRating } }, { new: true })
         .then(book => {
-             if (!book) { return res.status(404).json({ message: 'Livre introuvable!' }); }
+             //if (!book) { return res.status(404).json({ message: 'Livre introuvable!' }); }
             const sumRatings = book.ratings.reduce((sum, rating) => sum + rating.grade, 0);
             book.averageRating = sumRatings / book.ratings.length;
-            book.averageRating.toFixed(2);
+            //book.averageRating.toFixed(2);
             book.save()
                 .then(() => res.status(200).json({ book }))
                 .catch((error) => { res.status(500).json({ error }) })
         })
-        .catch((error) => { res.status(404).json({ error }) });
+        .catch((error) => { res.status(400).json({ error }) });
 };
 
 exports.getBestRating = (req, res, next) => {
@@ -115,8 +115,8 @@ exports.getBestRating = (req, res, next) => {
   Book.find()
       .then((books) => {
           books.sort((a, b) => b.averageRating - a.averageRating)
-          books.slice(0, 3)
+          books=books.slice(0, 3)
           res.status(200).json(books);
       })
-      .catch((error) => { res.status(404).json({ error: error }); });
+      .catch((error) => { res.status(400).json({ error: error }); });
 };
